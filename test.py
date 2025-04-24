@@ -5,8 +5,8 @@ import time
 from io import BytesIO
 
 # Configuration
-API_URL = "http://localhost:8000/upload"  # URL of the finger detection API
-CAPTURE_DELAY = 1  # Delay between captures in seconds
+API_URL = "http://localhost:8000/upload"
+CAPTURE_DELAY = 1
 WINDOW_NAME = "Finger Counter - Press 'q' to quit"
 
 def capture_and_detect():
@@ -26,16 +26,13 @@ def capture_and_detect():
     
     try:
         while True:
-            # Capture frame-by-frame
             ret, frame = cam.read()
             if not ret:
                 print("Error: Failed to capture image")
                 break
             
-            # Mirror the image horizontally (more intuitive for user)
             frame = cv2.flip(frame, 1)
             
-            # Show a countdown for next capture
             current_time = time.time()
             time_since_last = current_time - last_capture_time
             if time_since_last < CAPTURE_DELAY:
@@ -44,30 +41,24 @@ def capture_and_detect():
                            (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 
                            0.7, (0, 0, 255), 2)
             else:
-                # Add "Capturing..." text
                 cv2.putText(frame, "Capturing...", (10, 30), 
                            cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
                 
-                # Process the current frame if it's time
                 if time_since_last >= CAPTURE_DELAY:
                     fingers = process_frame(frame)
                     last_capture_time = current_time
                     
-                    # Display finger count on the frame
                     if fingers is not None:
                         cv2.putText(frame, f"Fingers detected: {fingers}", 
                                   (10, 70), cv2.FONT_HERSHEY_SIMPLEX, 
                                   0.9, (255, 0, 0), 2)
             
-            # Display the frame
             cv2.imshow(WINDOW_NAME, frame)
             
-            # Break the loop if 'q' is pressed
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
                 
     finally:
-        # Release resources
         cam.release()
         cv2.destroyAllWindows()
         print("Camera released and application closed.")
@@ -83,13 +74,10 @@ def process_frame(frame):
         int: Number of fingers detected or None if there was an error
     """
     try:
-        # Convert the frame to JPEG
         _, img_encoded = cv2.imencode('.jpg', frame)
         
-        # Prepare the image for the request
         files = {'image': ('image.jpg', BytesIO(img_encoded.tobytes()), 'image/jpeg')}
         
-        # Send the request to the API
         print("Sending image to API...")
         response = requests.post(
             API_URL, 

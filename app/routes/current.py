@@ -1,7 +1,7 @@
 from fastapi import APIRouter
 
-from app.core.finger_detection import get_last_finger_count
-from app.models.response_models import FingerCountResponse
+from app.models.FingerCountResponse import FingerCountResponse
+from app.utils.image_utils import get_last_finger_count
 
 router = APIRouter()
 

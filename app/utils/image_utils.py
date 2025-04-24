@@ -1,56 +1,81 @@
 import cv2
-import numpy as np
-import base64
-from io import BytesIO
-from PIL import Image
+from app.core.HandProcessor import HandProcessor
 
-def read_image_file_to_cv2(file_path):
+detector = HandProcessor()
+
+def detect_fingers(image_path, min_finger_length=30, min_angle=80):
     """
-    Reads an image file and returns an OpenCV image.
+    Detects the number of fingers in an image using the SimpleHandDetector.
     
     Args:
-        file_path (str): Path to the image file
+        image_path (str): Path to the image file
+        min_finger_length (int): Not used in the new implementation but kept for API compatibility
+        min_angle (int): Not used in the new implementation but kept for API compatibility
+        
+    Returns:
+        int: Number of fingers detected (0-5)
+    """
+    global last_detected_count, hand_skeleton_image
+    
+    image = cv2.imread(image_path)
+    if image is None:
+        raise ValueError(f"Could not read image from {image_path}")
+    
+    result_img, fingers = detector.process_image(image)
+    
+    last_detected_count = fingers
+    hand_skeleton_image = result_img
+    
+    return fingers
+
+def get_last_finger_count():
+    """
+    Returns the most recent finger count detected.
     
     Returns:
-        numpy.ndarray: OpenCV image
+        int: Last detected finger count (0-5)
     """
-    return cv2.imread(file_path)
+    return last_detected_count
 
-def bytes_to_cv2_image(image_bytes):
+def detect_hand_skeleton(image_path):
     """
-    Converts bytes to an OpenCV image.
+    Uses the SimpleHandDetector to detect hand skeleton and finger count.
     
     Args:
-        image_bytes (bytes): Image data as bytes
+        image_path (str): Path to the image file
+        
+    Returns:
+        tuple: (finger_count, skeleton_image)
+    """
+    finger_count = detect_fingers(image_path)
+    
+    return finger_count, get_hand_skeleton_image()
+
+def get_hand_skeleton_image():
+    """
+    Returns the latest hand skeleton image.
     
     Returns:
-        numpy.ndarray: OpenCV image
+        numpy.ndarray: The image with hand skeleton visualization
     """
-    # Convert bytes to numpy array
-    nparr = np.frombuffer(image_bytes, np.uint8)
-    
-    # Decode the numpy array as an image
-    return cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+    global hand_skeleton_image
+    return hand_skeleton_image
 
-def cv2_to_base64(image):
+def save_debug_image(image_path, output_path="debug_image.jpg"):
     """
-    Converts an OpenCV image to base64 string.
+    Helper function to save a debug image showing the finger detection process.
     
     Args:
-        image (numpy.ndarray): OpenCV image
-    
-    Returns:
-        str: Base64 encoded string
+        image_path (str): Path to the input image
+        output_path (str): Path to save the debug image
     """
-    # Convert OpenCV image to PIL Image
-    image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-    pil_image = Image.fromarray(image_rgb)
+    finger_count = detect_fingers(image_path)
     
-    # Save PIL Image to BytesIO object
-    buffer = BytesIO()
-    pil_image.save(buffer, format="JPEG")
-    
-    # Encode BytesIO to base64
-    img_str = base64.b64encode(buffer.getvalue()).decode('ascii')
-    
-    return img_str
+    if hand_skeleton_image is not None:
+        cv2.imwrite(output_path, hand_skeleton_image)
+    else:
+        image = cv2.imread(image_path)
+        if image is not None:
+            cv2.putText(image, f"No hand detected", (10, 30), 
+                       cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+            cv2.imwrite(output_path, image)

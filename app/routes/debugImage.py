@@ -2,7 +2,6 @@ from fastapi import APIRouter, HTTPException
 from fastapi.responses import FileResponse
 import os
 
-# Import the constant directly to avoid circular import
 TEMP_DIR = "temp"
 DEBUG_IMAGE_PATH = os.path.join(TEMP_DIR, "debug_image.jpg")
 

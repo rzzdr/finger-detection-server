@@ -13,23 +13,20 @@ ROUTERS = (
     debugImageRouter
 )
 
-# Create FastAPI application
 app = FastAPI(
     title="Finger Detection Server",
     description="A FastAPI server for detecting fingers in images from ESP32-CAM",
     version="0.1.0",
-    # Add OpenAPI configuration to avoid pydantic conversion issues
     openapi_url="/openapi.json",
     docs_url="/docs",
 )
 
-# Add CORS middleware to allow requests from ESP32-CAM
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Allow all origins
+    allow_origins=["*"],
     allow_credentials=True,
-    allow_methods=["*"],  # Allow all methods
-    allow_headers=["*"],  # Allow all headers
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 # Include API routes
