@@ -1,38 +1,67 @@
 # Finger Detection Server for ESP32-CAM
 
-A Python FastAPI server that works with an ESP32-CAM to detect the number of fingers in an image and control LEDs via a relay module.
+A Python FastAPI server that processes images to detect fingers using computer vision techniques. This server can work with ESP32-CAM to control LEDs via a relay module based on the number of fingers detected.
 
 ## Project Overview
 
 This project consists of:
 1. A FastAPI server that processes images and detects fingers using OpenCV
 2. Integration with ESP32-CAM for image capture and relay control
-3. Image processing logic to detect and count fingers (1-4)
+3. Image processing logic to detect and count fingers (0-4)
+4. Real-time visualization of the finger detection process
 
 ## Requirements
 
 - Python 3.8 or higher
-- Poetry for dependency management
-- ESP32-CAM module
-- 4-channel relay module
-- 4 LEDs
+- Dependencies can be installed via Poetry or pip (requirements.txt provided)
+- For testing: Webcam connected to your computer
+- For practical application: ESP32-CAM module and 4-channel relay module
 
 ## Installation
 
-1. Clone this repository
-2. Install dependencies with Poetry:
+### Option 1: Using Poetry (Recommended)
 
-```bash
-poetry install
-```
+1. Clone this repository
+2. Install Poetry if you don't have it:
+   ```bash
+   curl -sSL https://install.python-poetry.org | python3 -
+   ```
+   or on Windows:
+   ```powershell
+   (Invoke-WebRequest -Uri https://install.python-poetry.org -UseBasicParsing).Content | python -
+   ```
+
+3. Install dependencies with Poetry:
+   ```bash
+   poetry install
+   ```
+
+### Option 2: Using pip
+
+1. Clone this repository
+2. Install dependencies with pip:
+   ```bash
+   pip install -r requirements.txt
+   ```
 
 ## Running the Server
+
+### Using Poetry:
 
 ```bash
 poetry run python main.py
 ```
 
+### Using regular Python:
+
+```bash
+python main.py
+```
+
 The server will start on `http://0.0.0.0:8000`
+API documentation available at `http://0.0.0.0:8000/docs`
+
+## Project Structure
 
 ## API Endpoints
 
@@ -171,16 +200,91 @@ void controlRelays(int count) {
 
 ## How the Finger Detection Works
 
-The finger detection algorithm:
+The finger detection algorithm uses computer vision techniques and mathematical principles to detect and count fingers in an image. Here's a detailed explanation of how it works:
 
-1. Converts the image to HSV color space
-2. Detects skin color using predefined HSV ranges
-3. Creates a binary mask of the hand
-4. Finds contours in the mask
-5. Calculates convex hull and convexity defects
-6. Counts fingers based on angles between defects
+### 1. Color Space Conversion and Skin Detection
+The algorithm first converts RGB images to HSV (Hue-Saturation-Value) color space, which separates color information (hue) from intensity (value) and saturation, making it more robust for skin detection under varying lighting conditions.
 
-You may need to adjust the skin detection parameters based on your lighting conditions.
+#### Mathematical basis:
+For each pixel RGB(r,g,b), the conversion to HSV follows:
+```
+V = max(r,g,b)
+S = (V-min(r,g,b))/V if V≠0, otherwise S=0
+H = {
+    60° × (g-b)/(V-min(r,g,b)) if V=r
+    60° × (2+(b-r)/(V-min(r,g,b))) if V=g
+    60° × (4+(r-g)/(V-min(r,g,b))) if V=b
+}
+```
+
+#### Skin Detection Parameters:
+Two HSV ranges are used to accommodate various skin tones:
+- Primary range: H[0-20], S[20-255], V[70-255]
+- Secondary range: H[170-180], S[20-255], V[70-255]
+
+The ranges are combined using a bitwise OR operation to create a binary mask where white pixels (255) represent skin.
+
+### 2. Mask Enhancement
+The binary mask is enhanced through morphological operations:
+- **Dilation**: Expands white regions using kernel K: `Dilate(I) = I ⊕ K`
+- **Erosion**: Shrinks white regions using kernel K: `Erode(I) = I ⊖ K`
+- **Gaussian Blur**: Applied with kernel size (5,5) to smooth edges:
+  ```
+  G(x,y) = (1/(2πσ²)) * e^(-(x²+y²)/(2σ²))
+  ```
+
+### 3. Contour Extraction
+The algorithm finds contours in the binary mask using border following algorithm. The largest contour is selected as the hand, filtering out contours with area < 5000 pixels to eliminate noise.
+
+### 4. Convex Hull and Defects Analysis
+The convex hull is a convex polygon that encloses the hand contour. Mathematically, for points P in the contour, the convex hull H is:
+```
+H = {∑(λᵢpᵢ) | pᵢ ∈ P, λᵢ ≥ 0, ∑λᵢ = 1}
+```
+
+**Convexity defects** are regions where the contour deviates from the hull - these represent spaces between fingers.
+
+Each defect is defined by four points:
+- Start point (s): Point on the hull
+- End point (e): Next point on the hull
+- Far point (f): Farthest point on the contour from the line segment between start and end
+- Distance (d): Distance from far point to the hull
+
+### 5. Mathematical Angle Calculation for Finger Identification
+For each defect, the algorithm forms a triangle between start(s), end(e), and far(f) points.
+
+The sides of the triangle are:
+```
+a = √((eₓ - sₓ)² + (eᵧ - sᵧ)²)
+b = √((fₓ - sₓ)² + (fᵧ - sᵧ)²)
+c = √((eₓ - fₓ)² + (eᵧ - fᵧ)²)
+```
+
+Using the Law of Cosines, the angle (θ) at the far point is calculated:
+```
+θ = arccos((b² + c² - a²)/(2bc)) × (180/π)
+```
+
+Finger valleys are identified when:
+1. θ ≤ 90° (acute angle between fingers)
+2. d/256 > 10 (sufficient depth of defect)
+
+### 6. Final Finger Count
+The number of identified defects plus one gives the finger count (accounting for the thumb or last finger). The maximum is capped at 5 fingers.
+
+### Advanced Visualization
+The algorithm draws:
+- Hand contours in green
+- Convexity defect points in red
+- Fingertips in yellow
+- A small thumbnail of the skin mask in the corner for debugging
+
+### Parameters Tuning
+Key parameters that may require adjustment based on lighting and skin tone include:
+- HSV ranges for skin detection (in `detect_skin` method)
+- Minimum contour area threshold (currently 5000 pixels)
+- Angle threshold (currently 90°)
+- Defect depth threshold (currently d/256 > 10)
 
 ## Troubleshooting
 

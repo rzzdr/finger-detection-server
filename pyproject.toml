@@ -12,7 +12,11 @@ numpy = "^1.26.0"
 opencv-python-headless = "^4.8.1"
 python-multipart = "^0.0.6"
 pillow = "^10.0.0"
-pydantic = "^1.10.8"  # Downgraded to v1 which is more stable with FastAPI
+pydantic = "^1.10.8,<2.0.0"  # Keep version constraint from requirements.txt
+setuptools = "^68.0.0"  # Added from requirements.txt
+wheel = "^0.41.0"  # Added from requirements.txt
+typing-extensions = "^4.8.0"  # Added from requirements.txt
+requests = "^2.28.0"  # Added for API testing on client applications
 
 [tool.poetry.dev-dependencies]
 pytest = "^7.4.0"
