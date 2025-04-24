@@ -95,7 +95,8 @@ class HandProcessor:
                 fingertips.append(end)
                 finger_count += 1
                 
-        finger_count = min(finger_count + 1, 5)
+        # Cap the finger count at 4 to match the model's constraints
+        finger_count = min(finger_count + 1, 4)
         
         for tip in fingertips:
             cv2.circle(output, tip, 8, [0, 255, 255], -1)
