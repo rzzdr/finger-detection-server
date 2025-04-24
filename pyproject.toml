@@ -5,7 +5,7 @@ description = "A FastAPI server for detecting fingers in images"
 authors = ["Rudr Pratap Singh <rudrpsingh@pm.me>"]
 
 [tool.poetry.dependencies]
-python = ">=3.8,<3.14"
+python = ">=3.9,<3.13"
 fastapi = "^0.103.1"
 uvicorn = "^0.23.2"
 numpy = "^1.26.0"
