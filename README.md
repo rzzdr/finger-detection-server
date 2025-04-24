@@ -270,7 +270,7 @@ Finger valleys are identified when:
 2. d/256 > 10 (sufficient depth of defect)
 
 ### 6. Final Finger Count
-The number of identified defects plus one gives the finger count (accounting for the thumb or last finger). The maximum is capped at 5 fingers.
+The number of identified defects plus one gives the finger count (accounting for the thumb or last finger). The maximum is capped at 4 fingers.
 
 ### Advanced Visualization
 The algorithm draws:
