@@ -1,8 +1,8 @@
 [tool.poetry]
 name = "finger-detection-server"
 version = "0.1.0"
-description = "A FastAPI server for detecting fingers in images from ESP32-CAM"
-authors = ["Rudr Pratap Singh <rudrpsingh@proton.me>"]
+description = "A FastAPI server for detecting fingers in images"
+authors = ["Rudr Pratap Singh <rudrpsingh@pm.me>"]
 
 [tool.poetry.dependencies]
 python = ">=3.8,<3.14"
